@@ -87,7 +87,7 @@ def _extract_header(text: str, scan: ParsedScan):
         if val.lower() not in ("height", "age", "gender"):
             scan.patient_id = val
 
-    # Name in parentheses after ID line, e.g. "(Matus Pavliscak)"
+    # Name in parentheses after ID line, e.g. "(John Smith)"
     m = re.search(r'\(([A-Z][a-zA-Zéáíóúčšžťďňřůý]+\s+[A-Z][a-zA-Zéáíóúčšžťďňřůý]+)\)', text)
     if m:
         scan.patient_name = m.group(1)
