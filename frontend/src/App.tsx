@@ -1,49 +1,88 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from './lib/api';
-import type { ScanSummary, TrendPoint, Scan } from './types';
+import type { ScanSummary, TrendPoint, Scan, Goals } from './types';
 import { Dashboard } from './components/Dashboard';
 import { ScanDetail } from './components/ScanDetail';
 import { UploadForm } from './components/UploadForm';
+import { ToastContainer, createToast, type Toast } from './components/Toasts';
+import { DashboardSkeleton, ScanDetailSkeleton } from './components/Skeleton';
 import './index.css';
 
 export default function App() {
   const [scans, setScans] = useState<ScanSummary[]>([]);
   const [trends, setTrends] = useState<TrendPoint[]>([]);
+  const [goals, setGoals] = useState<Goals>({ target_weight: null, target_pbf: null });
   const [selectedScan, setSelectedScan] = useState<Scan | null>(null);
+  const [previousScan, setPreviousScan] = useState<Scan | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState('');
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadingScan, setLoadingScan] = useState(false);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+
+  const toast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToasts((prev) => [...prev, createToast(message, type)]);
+  };
+  const dismissToast = (id: number) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
 
   const refresh = useCallback(async () => {
     try {
-      const [s, t] = await Promise.all([api.listScans(), api.getTrends()]);
+      const [s, t, g] = await Promise.all([api.listScans(), api.getTrends(), api.getGoals()]);
       setScans(s);
       setTrends(t);
+      setGoals(g);
     } catch (e: any) {
-      setError(e.message);
+      toast(e.message, 'error');
+    } finally {
+      setLoading(false);
     }
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
 
-  const handleUpload = async (file: File) => {
+  const handleUpload = async (files: File[]) => {
     setUploading(true);
-    setError('');
-    try {
-      await api.upload(file);
-      await refresh();
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setUploading(false);
+    for (let i = 0; i < files.length; i++) {
+      setUploadProgress({ current: i + 1, total: files.length });
+      try {
+        await api.upload(files[i]);
+        toast(`${files[i].name} processed successfully`);
+      } catch (e: any) {
+        toast(`${files[i].name}: ${e.message}`, 'error');
+      }
     }
+    setUploadProgress(null);
+    await refresh();
+    setUploading(false);
+  };
+
+  const handleInvalidFiles = (names: string[]) => {
+    toast(`Skipped unsupported file${names.length > 1 ? 's' : ''}: ${names.join(', ')}`, 'error');
   };
 
   const handleSelectScan = async (id: number) => {
+    setLoadingScan(true);
+    setSelectedScan(null);
+    setPreviousScan(null);
     try {
       const scan = await api.getScan(id);
       setSelectedScan(scan);
+      // Find the next older scan in the list to compute deltas
+      const idx = scans.findIndex((s) => s.id === id);
+      if (idx >= 0 && idx < scans.length - 1) {
+        try {
+          const prev = await api.getScan(scans[idx + 1].id);
+          setPreviousScan(prev);
+        } catch {
+          // silently skip if previous scan can't be loaded
+        }
+      }
     } catch (e: any) {
-      setError(e.message);
+      toast(e.message, 'error');
+    } finally {
+      setLoadingScan(false);
     }
   };
 
@@ -51,9 +90,10 @@ export default function App() {
     try {
       await api.deleteScan(id);
       if (selectedScan?.id === id) setSelectedScan(null);
+      toast('Scan deleted');
       await refresh();
     } catch (e: any) {
-      setError(e.message);
+      toast(e.message, 'error');
     }
   };
 
@@ -61,9 +101,41 @@ export default function App() {
     try {
       const updated = await api.updateScan(id, data);
       setSelectedScan(updated);
+      toast('Scan updated');
       await refresh();
     } catch (e: any) {
-      setError(e.message);
+      toast(e.message, 'error');
+    }
+  };
+
+  const handleSaveGoals = async (g: Goals) => {
+    try {
+      const saved = await api.setGoals(g);
+      setGoals(saved);
+      toast('Goals saved');
+    } catch (e: any) {
+      toast(e.message, 'error');
+    }
+  };
+
+  const handleSeedSample = async () => {
+    try {
+      await api.seedSampleData();
+      toast('Sample data loaded');
+      await refresh();
+    } catch (e: any) {
+      toast(e.message, 'error');
+    }
+  };
+
+  const handleClearAll = async () => {
+    try {
+      await api.clearAllScans();
+      setSelectedScan(null);
+      toast('All data cleared');
+      await refresh();
+    } catch (e: any) {
+      toast(e.message, 'error');
     }
   };
 
@@ -87,21 +159,19 @@ export default function App() {
               </button>
             )}
           </div>
-          <UploadForm onUpload={handleUpload} uploading={uploading} />
+          <UploadForm onUpload={handleUpload} uploading={uploading} uploadProgress={uploadProgress} onInvalidFiles={handleInvalidFiles} />
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6">
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-            {error}
-            <button onClick={() => setError('')} className="ml-2 text-red-400 hover:text-red-600">✕</button>
-          </div>
-        )}
-
-        {selectedScan ? (
+        {loading ? (
+          <DashboardSkeleton />
+        ) : loadingScan ? (
+          <ScanDetailSkeleton />
+        ) : selectedScan ? (
           <ScanDetail
             scan={selectedScan}
+            previousScan={previousScan}
             onDelete={handleDeleteScan}
             onUpdate={handleUpdateScan}
           />
@@ -109,11 +179,20 @@ export default function App() {
           <Dashboard
             scans={scans}
             trends={trends}
+            goals={goals}
             onSelectScan={handleSelectScan}
             onDeleteScan={handleDeleteScan}
+            onSaveGoals={handleSaveGoals}
+            onSeedSample={handleSeedSample}
+            onClearAll={handleClearAll}
+            onNotify={toast}
+            onUpload={handleUpload}
+            onInvalidFiles={handleInvalidFiles}
           />
         )}
       </main>
+
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 }

@@ -2,6 +2,10 @@
 
 Personal dashboard for tracking InBody body composition scan results. Upload InBody PDFs or images — the app extracts metrics via OCR and displays trends over time.
 
+![Dashboard](docs/dashboard.png)
+
+![Scan Detail](docs/detail.png)
+
 ## Features
 
 - Upload InBody scan PDFs or photos for automatic data extraction (OCR)

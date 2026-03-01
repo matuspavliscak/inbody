@@ -1,37 +1,60 @@
 import { useState } from 'react';
 import type { Scan } from '../types';
 import { Trash2, Save, Edit3 } from 'lucide-react';
+import { Tip } from './Tip';
+import { ConfirmModal } from './ConfirmModal';
+import { btn } from '../lib/styles';
 
 interface Props {
   scan: Scan;
+  previousScan?: Scan | null;
   onDelete: (id: number) => void;
   onUpdate: (id: number, data: Partial<Scan>) => void;
+}
+
+// Metrics where a decrease is positive (lower is better)
+const invertedMetrics = new Set(['pbf', 'bmi', 'body_fat_mass']);
+
+// Only show deltas for these summary-level metrics
+const deltaMetrics = new Set(['weight', 'smm', 'pbf', 'bmi', 'inbody_score']);
+
+function Delta({ current, previous, invert }: { current?: number; previous?: number; invert?: boolean }) {
+  if (current == null || previous == null) return null;
+  const diff = current - previous;
+  if (diff === 0) return null;
+  const positive = invert ? diff < 0 : diff > 0;
+  const sign = diff > 0 ? '+' : '';
+  return (
+    <span className={`text-xs font-medium ml-2 ${positive ? 'text-emerald-600' : 'text-red-500'}`}>
+      {sign}{diff.toFixed(1)}
+    </span>
+  );
 }
 
 const sections = [
   {
     title: 'Body Composition',
     fields: [
-      { key: 'total_body_water', label: 'Total Body Water', unit: 'L' },
+      { key: 'total_body_water', label: 'Total Body Water', unit: 'L', tip: 'TBW' },
       { key: 'protein', label: 'Protein', unit: 'kg' },
       { key: 'minerals', label: 'Minerals', unit: 'kg' },
-      { key: 'body_fat_mass', label: 'Body Fat Mass', unit: 'kg' },
+      { key: 'body_fat_mass', label: 'Body Fat Mass', unit: 'kg', tip: 'BFM' },
       { key: 'weight', label: 'Weight', unit: 'kg' },
     ],
   },
   {
     title: 'Muscle-Fat Analysis',
     fields: [
-      { key: 'smm', label: 'Skeletal Muscle Mass', unit: 'kg' },
+      { key: 'smm', label: 'Skeletal Muscle Mass', unit: 'kg', tip: 'SMM' },
       { key: 'weight', label: 'Weight', unit: 'kg' },
-      { key: 'body_fat_mass', label: 'Body Fat Mass', unit: 'kg' },
+      { key: 'body_fat_mass', label: 'Body Fat Mass', unit: 'kg', tip: 'BFM' },
     ],
   },
   {
     title: 'Obesity Analysis',
     fields: [
-      { key: 'bmi', label: 'BMI', unit: 'kg/m²' },
-      { key: 'pbf', label: 'Percent Body Fat', unit: '%' },
+      { key: 'bmi', label: 'BMI', unit: 'kg/m²', tip: 'BMI' },
+      { key: 'pbf', label: 'Percent Body Fat', unit: '%', tip: 'PBF' },
     ],
   },
   {
@@ -46,12 +69,12 @@ const sections = [
   {
     title: 'Research Parameters',
     fields: [
-      { key: 'waist_hip_ratio', label: 'Waist-Hip Ratio', unit: '' },
-      { key: 'visceral_fat_level', label: 'Visceral Fat Level', unit: '' },
-      { key: 'fat_free_mass', label: 'Fat Free Mass', unit: 'kg' },
-      { key: 'basal_metabolic_rate', label: 'Basal Metabolic Rate', unit: 'kcal' },
+      { key: 'waist_hip_ratio', label: 'Waist-Hip Ratio', unit: '', tip: 'WHR' },
+      { key: 'visceral_fat_level', label: 'Visceral Fat Level', unit: '', tip: 'VFL' },
+      { key: 'fat_free_mass', label: 'Fat Free Mass', unit: 'kg', tip: 'FFM' },
+      { key: 'basal_metabolic_rate', label: 'Basal Metabolic Rate', unit: 'kcal', tip: 'BMR' },
       { key: 'obesity_degree', label: 'Obesity Degree', unit: '%' },
-      { key: 'smi', label: 'SMI', unit: 'kg/m²' },
+      { key: 'smi', label: 'SMI', unit: 'kg/m²', tip: 'SMI' },
       { key: 'recommended_calories', label: 'Recommended Calories', unit: 'kcal' },
     ],
   },
@@ -164,9 +187,10 @@ function ImpedanceTable({ data }: { data: Record<string, number> }) {
   );
 }
 
-export function ScanDetail({ scan, onDelete, onUpdate }: Props) {
+export function ScanDetail({ scan, previousScan, onDelete, onUpdate }: Props) {
   const [editing, setEditing] = useState(false);
   const [edits, setEdits] = useState<Record<string, string>>({});
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const startEdit = () => {
     setEditing(true);
@@ -215,24 +239,15 @@ export function ScanDetail({ scan, onDelete, onUpdate }: Props) {
         </div>
         <div className="flex gap-2">
           {editing ? (
-            <button
-              onClick={saveEdits}
-              className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm rounded-lg"
-            >
+            <button onClick={saveEdits} className={btn.primary}>
               <Save size={14} /> Save
             </button>
           ) : (
-            <button
-              onClick={startEdit}
-              className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm rounded-lg"
-            >
+            <button onClick={startEdit} className={btn.secondary}>
               <Edit3 size={14} /> Edit
             </button>
           )}
-          <button
-            onClick={() => { if (confirm('Delete this scan?')) onDelete(scan.id); }}
-            className="flex items-center gap-1 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-sm rounded-lg"
-          >
+          <button onClick={() => setShowDeleteConfirm(true)} className={btn.danger}>
             <Trash2 size={14} /> Delete
           </button>
         </div>
@@ -242,7 +257,10 @@ export function ScanDetail({ scan, onDelete, onUpdate }: Props) {
       {scan.inbody_score != null && (
         <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-6 text-center">
           <div className="text-sm text-emerald-600 mb-1">InBody Score</div>
-          <div className="text-5xl font-bold text-gray-900">{scan.inbody_score}</div>
+          <div className="text-5xl font-bold text-gray-900">
+            {scan.inbody_score}
+            <Delta current={scan.inbody_score} previous={previousScan?.inbody_score} />
+          </div>
           <div className="text-gray-400 text-sm">/100</div>
         </div>
       )}
@@ -266,7 +284,9 @@ export function ScanDetail({ scan, onDelete, onUpdate }: Props) {
             <div className="space-y-2">
               {section.fields.map((f) => (
                 <div key={f.key + f.label} className="flex items-center justify-between">
-                  <span className="text-gray-500 text-sm">{f.label}</span>
+                  <span className="text-gray-500 text-sm">
+                    {f.tip ? <Tip term={f.tip}>{f.label}</Tip> : f.label}
+                  </span>
                   {editing ? (
                     <input
                       type="text"
@@ -280,6 +300,13 @@ export function ScanDetail({ scan, onDelete, onUpdate }: Props) {
                       {getValue(f.key) || '—'}
                       {getValue(f.key) && f.unit && (
                         <span className="text-gray-400 ml-1">{f.unit}</span>
+                      )}
+                      {previousScan && deltaMetrics.has(f.key) && (
+                        <Delta
+                          current={scan[f.key as keyof Scan] as number | undefined}
+                          previous={previousScan[f.key as keyof Scan] as number | undefined}
+                          invert={invertedMetrics.has(f.key)}
+                        />
                       )}
                     </span>
                   )}
@@ -296,6 +323,16 @@ export function ScanDetail({ scan, onDelete, onUpdate }: Props) {
 
       {/* 9. Impedance table */}
       {impedance && <ImpedanceTable data={impedance} />}
+
+      <ConfirmModal
+        open={showDeleteConfirm}
+        title="Delete scan"
+        message={`Delete scan from ${scan.test_date}? This cannot be undone.`}
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        onConfirm={() => { setShowDeleteConfirm(false); onDelete(scan.id); }}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
     </div>
   );
 }

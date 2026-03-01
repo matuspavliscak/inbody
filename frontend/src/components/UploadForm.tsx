@@ -1,20 +1,37 @@
 import { useRef, useState } from 'react';
 import { Upload } from 'lucide-react';
+import { btn } from '../lib/styles';
 
 interface Props {
-  onUpload: (file: File) => void;
+  onUpload: (files: File[]) => void;
   uploading: boolean;
+  uploadProgress?: { current: number; total: number } | null;
+  onInvalidFiles?: (names: string[]) => void;
 }
 
-export function UploadForm({ onUpload, uploading }: Props) {
+export function UploadForm({ onUpload, uploading, uploadProgress, onInvalidFiles }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
 
-  const handleFile = (file: File) => {
-    if (file.type === 'application/pdf' || file.type.startsWith('image/')) {
-      onUpload(file);
+  const handleFiles = (fileList: FileList) => {
+    const all = Array.from(fileList);
+    const valid = all.filter(
+      (f) => f.type === 'application/pdf' || f.type.startsWith('image/')
+    );
+    const invalid = all.filter(
+      (f) => f.type !== 'application/pdf' && !f.type.startsWith('image/')
+    );
+    if (invalid.length > 0) {
+      onInvalidFiles?.(invalid.map((f) => f.name));
     }
+    if (valid.length > 0) onUpload(valid);
   };
+
+  const buttonLabel = uploading && uploadProgress
+    ? `Processing ${uploadProgress.current}/${uploadProgress.total}...`
+    : uploading
+      ? 'Processing...'
+      : 'Upload Scan';
 
   return (
     <div
@@ -24,26 +41,25 @@ export function UploadForm({ onUpload, uploading }: Props) {
       onDrop={(e) => {
         e.preventDefault();
         setDragOver(false);
-        const file = e.dataTransfer.files[0];
-        if (file) handleFile(file);
+        if (e.dataTransfer.files.length > 0) handleFiles(e.dataTransfer.files);
       }}
     >
       <button
         onClick={() => inputRef.current?.click()}
         disabled={uploading}
-        className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-medium rounded-lg transition-colors"
+        className={`${btn.primary} disabled:bg-gray-200 disabled:text-gray-400`}
       >
         <Upload size={16} />
-        {uploading ? 'Processing...' : 'Upload Scan'}
+        {buttonLabel}
       </button>
       <input
         ref={inputRef}
         type="file"
         accept=".pdf,.jpg,.jpeg,.png"
+        multiple
         className="hidden"
         onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) handleFile(file);
+          if (e.target.files && e.target.files.length > 0) handleFiles(e.target.files);
           e.target.value = '';
         }}
       />
