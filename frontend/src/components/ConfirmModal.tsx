@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { btn } from '../lib/styles';
+import { useT } from '../lib/i18n';
 
 interface Props {
   open: boolean;
@@ -16,11 +17,12 @@ export function ConfirmModal({
   open,
   title,
   message,
-  confirmLabel = 'Confirm',
+  confirmLabel,
   confirmVariant = 'danger',
   onConfirm,
   onCancel,
 }: Props) {
+  const { t } = useT();
   const cancelRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -59,10 +61,10 @@ export function ConfirmModal({
         </p>
         <div className="flex justify-end gap-3">
           <button ref={cancelRef} onClick={onCancel} className={btn.secondary}>
-            Cancel
+            {t('confirm.cancel')}
           </button>
           <button onClick={onConfirm} className={confirmClass}>
-            {confirmLabel}
+            {confirmLabel ?? t('confirm.confirm')}
           </button>
         </div>
       </div>

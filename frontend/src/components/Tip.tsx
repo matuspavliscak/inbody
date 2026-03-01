@@ -1,21 +1,25 @@
 import { useState, useRef, useCallback, useId } from 'react';
+import { useT } from '../lib/i18n';
+import type { TranslationKey } from '../lib/translations';
 
-const glossary: Record<string, string> = {
-  SMM: 'Skeletal Muscle Mass — the total weight of muscles attached to bones',
-  BMI: 'Body Mass Index — weight (kg) divided by height squared (m²)',
-  PBF: 'Percent Body Fat — body fat mass as a percentage of total weight',
-  BFM: 'Body Fat Mass — total weight of fat tissue in the body',
-  FFM: 'Fat-Free Mass — total weight minus body fat mass',
-  TBW: 'Total Body Water — total amount of water in the body',
-  SMI: 'Skeletal Muscle Index — skeletal muscle mass divided by height squared',
-  BMR: 'Basal Metabolic Rate — calories burned at rest per day',
-  WHR: 'Waist-Hip Ratio — waist circumference divided by hip circumference',
-  VFL: 'Visceral Fat Level — estimated fat around internal organs (1–20 scale)',
-  InBody: 'InBody Score — overall body composition score (0–100)',
+const glossaryKeys: Record<string, TranslationKey> = {
+  SMM: 'glossary.SMM',
+  BMI: 'glossary.BMI',
+  PBF: 'glossary.PBF',
+  BFM: 'glossary.BFM',
+  FFM: 'glossary.FFM',
+  TBW: 'glossary.TBW',
+  SMI: 'glossary.SMI',
+  BMR: 'glossary.BMR',
+  WHR: 'glossary.WHR',
+  VFL: 'glossary.VFL',
+  InBody: 'glossary.InBody',
 };
 
 export function Tip({ term, children }: { term: string; children?: React.ReactNode }) {
-  const description = glossary[term];
+  const { t } = useT();
+  const glossaryKey = glossaryKeys[term];
+  const description = glossaryKey ? t(glossaryKey) : undefined;
   const [show, setShow] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
   const tooltipId = useId();

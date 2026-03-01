@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { Upload } from 'lucide-react';
 import { btn } from '../lib/styles';
+import { useT } from '../lib/i18n';
 
 interface Props {
   onUpload: (files: File[]) => void;
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export function UploadForm({ onUpload, uploading, uploadProgress, onInvalidFiles }: Props) {
+  const { t } = useT();
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
 
@@ -28,10 +30,10 @@ export function UploadForm({ onUpload, uploading, uploadProgress, onInvalidFiles
   };
 
   const buttonLabel = uploading && uploadProgress
-    ? `Processing ${uploadProgress.current}/${uploadProgress.total}...`
+    ? t('upload.processingProgress', { current: uploadProgress.current, total: uploadProgress.total })
     : uploading
-      ? 'Processing...'
-      : 'Upload Scan';
+      ? t('upload.processing')
+      : t('upload.scan');
 
   return (
     <div
