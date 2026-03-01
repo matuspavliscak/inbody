@@ -11,7 +11,7 @@ interface Props {
 }
 
 export function TrendCharts({ trends, goals }: Props) {
-  const { t } = useT();
+  const { locale, t } = useT();
 
   const chartConfigs = [
     {
@@ -36,9 +36,14 @@ export function TrendCharts({ trends, goals }: Props) {
   ];
   const hasEnoughData = trends.length >= 2;
 
+  const formatDate = (iso: string) => {
+    const d = new Date(iso + 'T00:00:00');
+    return d.toLocaleDateString(locale === 'cs' ? 'cs-CZ' : 'en-GB', { month: 'short', year: 'numeric' });
+  };
+
   const data = trends.map((t) => ({
     ...t,
-    date: t.test_date.slice(5), // MM-DD for shorter labels
+    date: formatDate(t.test_date),
   }));
 
   return (
