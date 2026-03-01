@@ -1,0 +1,22 @@
+import logging
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from .database import engine, Base
+from .routers import upload, scans
+
+logging.basicConfig(level=logging.INFO)
+
+Base.metadata.create_all(bind=engine)
+
+app = FastAPI(title="InBody Dashboard API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(upload.router)
+app.include_router(scans.router)
