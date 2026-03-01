@@ -1,4 +1,4 @@
-import type { Scan, ScanSummary, TrendPoint } from '../types';
+import type { Scan, ScanSummary, TrendPoint, Goals } from '../types';
 
 const BASE = '/api';
 
@@ -28,6 +28,17 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     }),
+
+  getGoals: () => request<Goals>('/goals'),
+  setGoals: (goals: Goals) =>
+    request<Goals>('/goals', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(goals),
+    }),
+
+  seedSampleData: () => request<{ ok: boolean }>('/sample-data', { method: 'POST' }),
+  clearAllScans: () => request<{ ok: boolean }>('/scans', { method: 'DELETE' }),
 
   upload: async (file: File): Promise<Scan[]> => {
     const form = new FormData();

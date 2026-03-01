@@ -10,8 +10,9 @@ venv/
 .venv/
 env/
 
-# Database
+# Database & personal settings
 *.db
+goals.json
 
 # Uploads (may contain PHI)
 backend/uploads/*

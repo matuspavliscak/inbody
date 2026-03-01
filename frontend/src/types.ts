@@ -49,6 +49,11 @@ export interface ScanSummary {
   source_file?: string;
 }
 
+export interface Goals {
+  target_weight: number | null;
+  target_pbf: number | null;
+}
+
 export interface TrendPoint {
   test_date: string;
   weight?: number;
