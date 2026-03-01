@@ -3,35 +3,37 @@ import {
   ResponsiveContainer, Legend, ReferenceLine,
 } from 'recharts';
 import type { TrendPoint, Goals } from '../types';
+import { useT } from '../lib/i18n';
 
 interface Props {
   trends: TrendPoint[];
   goals: Goals;
 }
 
-const chartConfigs = [
-  {
-    title: 'Weight & Muscle',
-    lines: [
-      { key: 'weight', color: '#3b82f6', name: 'Weight (kg)' },
-      { key: 'smm', color: '#10b981', name: 'SMM (kg)' },
-      { key: 'body_fat_mass', color: '#f97316', name: 'Fat Mass (kg)' },
-    ],
-    goalKey: 'target_weight' as const,
-    goalLabel: 'Goal',
-  },
-  {
-    title: 'Body Fat % & BMI',
-    lines: [
-      { key: 'pbf', color: '#f97316', name: 'PBF (%)' },
-      { key: 'bmi', color: '#8b5cf6', name: 'BMI' },
-    ],
-    goalKey: 'target_pbf' as const,
-    goalLabel: 'Goal',
-  },
-];
-
 export function TrendCharts({ trends, goals }: Props) {
+  const { t } = useT();
+
+  const chartConfigs = [
+    {
+      title: t('chart.weightMuscle'),
+      lines: [
+        { key: 'weight', color: '#3b82f6', name: t('chart.weightKg') },
+        { key: 'smm', color: '#10b981', name: t('chart.smmKg') },
+        { key: 'body_fat_mass', color: '#f97316', name: t('chart.fatMassKg') },
+      ],
+      goalKey: 'target_weight' as const,
+      goalLabel: t('chart.goal'),
+    },
+    {
+      title: t('chart.fatBmi'),
+      lines: [
+        { key: 'pbf', color: '#f97316', name: t('chart.pbfPercent') },
+        { key: 'bmi', color: '#8b5cf6', name: t('chart.bmi') },
+      ],
+      goalKey: 'target_pbf' as const,
+      goalLabel: t('chart.goal'),
+    },
+  ];
   const hasEnoughData = trends.length >= 2;
 
   const data = trends.map((t) => ({
@@ -94,7 +96,7 @@ export function TrendCharts({ trends, goals }: Props) {
               </ResponsiveContainer>
             ) : (
               <div className="flex items-center justify-center h-[220px] text-gray-400 text-sm">
-                Need at least 2 scans to show trends
+                {t('chart.needMore')}
               </div>
             )}
           </div>

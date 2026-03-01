@@ -5,6 +5,8 @@ import { Activity, Scale, Dumbbell, Percent, Target, Trash2, Download, Goal, XCi
 import { Tip } from './Tip';
 import { ConfirmModal } from './ConfirmModal';
 import { btn } from '../lib/styles';
+import { useT } from '../lib/i18n';
+import type { TranslationKey } from '../lib/translations';
 
 interface Props {
   scans: ScanSummary[];
@@ -41,6 +43,7 @@ function StatCard({ label, value, unit, icon: Icon, color, tip }: {
 }
 
 function GoalsBar({ goals, onSave }: { goals: Goals; onSave: (g: Goals) => void }) {
+  const { t } = useT();
   const [editing, setEditing] = useState(false);
   const [weight, setWeight] = useState(goals.target_weight?.toString() ?? '');
   const [pbf, setPbf] = useState(goals.target_pbf?.toString() ?? '');
@@ -62,14 +65,24 @@ function GoalsBar({ goals, onSave }: { goals: Goals; onSave: (g: Goals) => void 
         {hasGoals ? (
           <div className="flex flex-wrap items-center gap-4 text-sm">
             {goals.target_weight != null && (
-              <span className="text-gray-700">Target weight: <strong>{goals.target_weight} kg</strong></span>
+              <span className="text-gray-700" dangerouslySetInnerHTML={{
+                __html: t('goals.targetWeight', { value: goals.target_weight }).replace(
+                  String(goals.target_weight) + ' kg',
+                  `<strong>${goals.target_weight} kg</strong>`,
+                ),
+              }} />
             )}
             {goals.target_pbf != null && (
-              <span className="text-gray-700">Target body fat: <strong>{goals.target_pbf}%</strong></span>
+              <span className="text-gray-700" dangerouslySetInnerHTML={{
+                __html: t('goals.targetFat', { value: goals.target_pbf }).replace(
+                  goals.target_pbf + '%',
+                  `<strong>${goals.target_pbf}%</strong>`,
+                ),
+              }} />
             )}
           </div>
         ) : (
-          <span className="text-sm text-gray-400">No goals set</span>
+          <span className="text-sm text-gray-400">{t('goals.none')}</span>
         )}
         <button
           onClick={() => {
@@ -79,7 +92,7 @@ function GoalsBar({ goals, onSave }: { goals: Goals; onSave: (g: Goals) => void 
           }}
           className={`ml-auto ${btn.ghost}`}
         >
-          {hasGoals ? 'Edit' : 'Set goals'}
+          {hasGoals ? t('goals.edit') : t('goals.set')}
         </button>
       </div>
     );
@@ -89,7 +102,7 @@ function GoalsBar({ goals, onSave }: { goals: Goals; onSave: (g: Goals) => void 
     <div className="flex flex-wrap items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5">
       <Goal size={16} className="text-emerald-600 shrink-0" />
       <div className="flex items-center gap-2 text-sm">
-        <label className="text-gray-600">Weight</label>
+        <label className="text-gray-600">{t('goals.weightLabel')}</label>
         <input
           type="number"
           step="0.1"
@@ -100,7 +113,7 @@ function GoalsBar({ goals, onSave }: { goals: Goals; onSave: (g: Goals) => void 
         />
       </div>
       <div className="flex items-center gap-2 text-sm">
-        <label className="text-gray-600">Body Fat %</label>
+        <label className="text-gray-600">{t('goals.fatLabel')}</label>
         <input
           type="number"
           step="0.1"
@@ -111,17 +124,17 @@ function GoalsBar({ goals, onSave }: { goals: Goals; onSave: (g: Goals) => void 
         />
       </div>
       <button onClick={handleSave} className={`ml-auto ${btn.primary}`}>
-        Save
+        {t('goals.save')}
       </button>
       <button onClick={() => setEditing(false)} className={btn.ghost}>
-        Cancel
+        {t('goals.cancel')}
       </button>
     </div>
   );
 }
 
-function exportToCsv(scans: ScanSummary[]) {
-  const headers = ['Date', 'Weight (kg)', 'SMM (kg)', 'PBF (%)', 'BMI', 'InBody Score', 'Source File'];
+function exportToCsv(scans: ScanSummary[], t: (key: TranslationKey) => string) {
+  const headers = [t('csv.date'), t('csv.weight'), t('csv.smm'), t('csv.pbf'), t('csv.bmi'), t('csv.inbodyScore'), t('csv.sourceFile')];
   const rows = scans.map((s) => [
     s.test_date,
     s.weight ?? '',
@@ -142,6 +155,7 @@ function exportToCsv(scans: ScanSummary[]) {
 }
 
 export function Dashboard({ scans, trends, goals, onSelectScan, onDeleteScan, onSaveGoals, onSeedSample, onClearAll, onNotify, onUpload, onInvalidFiles }: Props) {
+  const { t } = useT();
   const [confirmAction, setConfirmAction] = useState<ConfirmAction>(null);
   const latest = scans[0];
 
@@ -167,8 +181,8 @@ export function Dashboard({ scans, trends, goals, onSelectScan, onDeleteScan, on
           className={`mx-auto max-w-md border-2 border-dashed rounded-xl p-10 cursor-pointer transition-colors ${dragOver ? 'border-emerald-400 bg-emerald-50' : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'}`}
         >
           <Upload size={32} className="mx-auto mb-3 text-gray-400" />
-          <h2 className="text-lg font-semibold text-gray-700 mb-1">Drop InBody scans here</h2>
-          <p className="text-sm text-gray-400">PDF or image files — click to browse</p>
+          <h2 className="text-lg font-semibold text-gray-700 mb-1">{t('empty.dropTitle')}</h2>
+          <p className="text-sm text-gray-400">{t('empty.dropDesc')}</p>
         </div>
         <input
           ref={fileInputRef}
@@ -180,11 +194,11 @@ export function Dashboard({ scans, trends, goals, onSelectScan, onDeleteScan, on
         />
         <div className="mt-6 flex items-center justify-center gap-3 text-sm text-gray-400">
           <span className="h-px w-12 bg-gray-200" />
-          or
+          {t('empty.or')}
           <span className="h-px w-12 bg-gray-200" />
         </div>
         <button onClick={onSeedSample} className={`mt-4 ${btn.ghost}`}>
-          Load sample data to explore
+          {t('empty.loadSample')}
         </button>
       </div>
     );
@@ -197,11 +211,11 @@ export function Dashboard({ scans, trends, goals, onSelectScan, onDeleteScan, on
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-        <StatCard label="Weight" value={latest?.weight} unit="kg" icon={Scale} color="text-blue-500" />
-        <StatCard label="SMM" value={latest?.smm} unit="kg" icon={Dumbbell} color="text-emerald-500" tip="SMM" />
-        <StatCard label="Body Fat %" value={latest?.pbf} unit="%" icon={Percent} color="text-orange-500" tip="PBF" />
-        <StatCard label="BMI" value={latest?.bmi} icon={Activity} color="text-purple-500" tip="BMI" />
-        <StatCard label="InBody Score" value={latest?.inbody_score} unit="/100" icon={Target} color="text-yellow-500" tip="InBody" />
+        <StatCard label={t('stat.weight')} value={latest?.weight} unit="kg" icon={Scale} color="text-blue-500" />
+        <StatCard label={t('stat.smm')} value={latest?.smm} unit="kg" icon={Dumbbell} color="text-emerald-500" tip="SMM" />
+        <StatCard label={t('stat.pbf')} value={latest?.pbf} unit="%" icon={Percent} color="text-orange-500" tip="PBF" />
+        <StatCard label={t('stat.bmi')} value={latest?.bmi} icon={Activity} color="text-purple-500" tip="BMI" />
+        <StatCard label={t('stat.inbodyScore')} value={latest?.inbody_score} unit="/100" icon={Target} color="text-yellow-500" tip="InBody" />
       </div>
 
       {/* Trend charts */}
@@ -210,28 +224,28 @@ export function Dashboard({ scans, trends, goals, onSelectScan, onDeleteScan, on
       {/* Scan list */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-gray-900">All Scans</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t('scanList.title')}</h2>
           <div className="flex gap-2">
             <button
               onClick={() => {
-                exportToCsv(scans);
-                onNotify?.('CSV exported');
+                exportToCsv(scans, t);
+                onNotify?.(t('toast.csvExported'));
               }}
               className={btn.secondary}
             >
               <Download size={14} />
-              <span className="hidden sm:inline">Export CSV</span>
+              <span className="hidden sm:inline">{t('scanList.exportCsv')}</span>
             </button>
             <button
               onClick={() => setConfirmAction({
-                title: 'Clear all data',
-                message: 'Delete all scans and goals? This cannot be undone.',
+                title: t('confirm.clearTitle'),
+                message: t('confirm.clearMessage'),
                 onConfirm: onClearAll,
               })}
               className={btn.danger}
             >
               <XCircle size={14} />
-              <span className="hidden sm:inline">Clear all</span>
+              <span className="hidden sm:inline">{t('scanList.clearAll')}</span>
             </button>
           </div>
         </div>
@@ -254,14 +268,14 @@ export function Dashboard({ scans, trends, goals, onSelectScan, onDeleteScan, on
                     {s.weight && <span className="text-gray-600">{s.weight} <span className="text-gray-400">kg</span></span>}
                     {s.smm && <span className="text-gray-600 hidden sm:inline"><Tip term="SMM">SMM</Tip> {s.smm}</span>}
                     {s.pbf && <span className="text-gray-600 hidden md:inline"><Tip term="PBF">PBF</Tip> {s.pbf}<span className="text-gray-400">%</span></span>}
-                    {s.inbody_score && <span className="text-gray-600">Score {s.inbody_score}</span>}
+                    {s.inbody_score && <span className="text-gray-600">{t('scanList.score')} {s.inbody_score}</span>}
                   </div>
                 </div>
               </button>
               <button
                 onClick={() => setConfirmAction({
-                  title: 'Delete scan',
-                  message: `Delete scan from ${s.test_date}? This cannot be undone.`,
+                  title: t('confirm.deleteScanTitle'),
+                  message: t('confirm.deleteScanMessage', { date: s.test_date }),
                   onConfirm: () => onDeleteScan(s.id),
                 })}
                 className="p-2.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0"
@@ -278,7 +292,7 @@ export function Dashboard({ scans, trends, goals, onSelectScan, onDeleteScan, on
         open={confirmAction !== null}
         title={confirmAction?.title ?? ''}
         message={confirmAction?.message ?? ''}
-        confirmLabel="Delete"
+        confirmLabel={t('confirm.delete')}
         confirmVariant="danger"
         onConfirm={() => { confirmAction?.onConfirm(); setConfirmAction(null); }}
         onCancel={() => setConfirmAction(null)}

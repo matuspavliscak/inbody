@@ -6,9 +6,11 @@ import { ScanDetail } from './components/ScanDetail';
 import { UploadForm } from './components/UploadForm';
 import { ToastContainer, createToast, type Toast } from './components/Toasts';
 import { DashboardSkeleton, ScanDetailSkeleton } from './components/Skeleton';
+import { useT, type Locale } from './lib/i18n';
 import './index.css';
 
 export default function App() {
+  const { locale, setLocale, t } = useT();
   const [scans, setScans] = useState<ScanSummary[]>([]);
   const [trends, setTrends] = useState<TrendPoint[]>([]);
   const [goals, setGoals] = useState<Goals>({ target_weight: null, target_pbf: null });
@@ -48,7 +50,7 @@ export default function App() {
       setUploadProgress({ current: i + 1, total: files.length });
       try {
         await api.upload(files[i]);
-        toast(`${files[i].name} processed successfully`);
+        toast(t('toast.processedSuccess', { name: files[i].name }));
       } catch (e: any) {
         toast(`${files[i].name}: ${e.message}`, 'error');
       }
@@ -59,7 +61,7 @@ export default function App() {
   };
 
   const handleInvalidFiles = (names: string[]) => {
-    toast(`Skipped unsupported file${names.length > 1 ? 's' : ''}: ${names.join(', ')}`, 'error');
+    toast(t('toast.skippedFiles', { names: names.join(', ') }), 'error');
   };
 
   const handleSelectScan = async (id: number) => {
@@ -90,7 +92,7 @@ export default function App() {
     try {
       await api.deleteScan(id);
       if (selectedScan?.id === id) setSelectedScan(null);
-      toast('Scan deleted');
+      toast(t('toast.scanDeleted'));
       await refresh();
     } catch (e: any) {
       toast(e.message, 'error');
@@ -101,7 +103,7 @@ export default function App() {
     try {
       const updated = await api.updateScan(id, data);
       setSelectedScan(updated);
-      toast('Scan updated');
+      toast(t('toast.scanUpdated'));
       await refresh();
     } catch (e: any) {
       toast(e.message, 'error');
@@ -112,7 +114,7 @@ export default function App() {
     try {
       const saved = await api.setGoals(g);
       setGoals(saved);
-      toast('Goals saved');
+      toast(t('toast.goalsSaved'));
     } catch (e: any) {
       toast(e.message, 'error');
     }
@@ -121,7 +123,7 @@ export default function App() {
   const handleSeedSample = async () => {
     try {
       await api.seedSampleData();
-      toast('Sample data loaded');
+      toast(t('toast.sampleLoaded'));
       await refresh();
     } catch (e: any) {
       toast(e.message, 'error');
@@ -132,7 +134,7 @@ export default function App() {
     try {
       await api.clearAllScans();
       setSelectedScan(null);
-      toast('All data cleared');
+      toast(t('toast.allCleared'));
       await refresh();
     } catch (e: any) {
       toast(e.message, 'error');
@@ -148,18 +150,31 @@ export default function App() {
               className="text-xl font-bold text-gray-900 cursor-pointer"
               onClick={() => setSelectedScan(null)}
             >
-              <span className="text-emerald-600">InBody</span> Dashboard
+              <span className="text-emerald-600">{t('header.brand')}</span> {t('header.dashboard')}
             </h1>
             {selectedScan && (
               <button
                 onClick={() => setSelectedScan(null)}
                 className="text-sm text-gray-400 hover:text-gray-900"
               >
-                ← Back
+                {t('header.back')}
               </button>
             )}
           </div>
-          <UploadForm onUpload={handleUpload} uploading={uploading} uploadProgress={uploadProgress} onInvalidFiles={handleInvalidFiles} />
+          <div className="flex items-center gap-3">
+            <div className="flex gap-1">
+              {([['en', '🇬🇧'], ['cs', '🇨🇿']] as [Locale, string][]).map(([l, flag]) => (
+                <button
+                  key={l}
+                  onClick={() => setLocale(l)}
+                  className={`text-lg leading-none transition-opacity ${locale === l ? 'opacity-100' : 'opacity-30 hover:opacity-60'}`}
+                >
+                  {flag}
+                </button>
+              ))}
+            </div>
+            <UploadForm onUpload={handleUpload} uploading={uploading} uploadProgress={uploadProgress} onInvalidFiles={handleInvalidFiles} />
+          </div>
         </div>
       </header>
 
