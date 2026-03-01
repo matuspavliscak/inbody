@@ -1,6 +1,6 @@
 # InBody Dashboard
 
-Personal dashboard for tracking InBody body composition scan results. Upload InBody PDFs or images — the app extracts metrics via OCR and displays trends over time.
+Personal dashboard for tracking InBody body composition scan results. Upload InBody PDFs or images - the app extracts metrics via OCR and displays trends over time.
 
 ![Dashboard](docs/dashboard.png)
 
@@ -51,7 +51,7 @@ The Vite dev server proxies `/api` requests to the backend at `localhost:8000`.
 
 ## Privacy
 
-This app processes health data (InBody scans). The uploaded files and extracted data stay local — there are no external API calls. The `backend/uploads/` directory and `*.db` database files are gitignored to prevent accidental exposure of personal health information.
+This app processes health data (InBody scans). The uploaded files and extracted data stay local - there are no external API calls. The `backend/uploads/` directory and `*.db` database files are gitignored to prevent accidental exposure of personal health information.
 
 ## License
 
