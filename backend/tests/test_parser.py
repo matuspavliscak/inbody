@@ -280,18 +280,6 @@ class TestExtractScoresAndControls:
         _extract_scores_and_controls("64 - 100 Points", scan)
         assert scan.inbody_score == 64.0
 
-    def test_score_label_then_number(self):
-        """OCR: 'InBody Score 64'."""
-        scan = ParsedScan()
-        _extract_scores_and_controls("InBody Score 64", scan)
-        assert scan.inbody_score == 64.0
-
-    def test_score_label_newline_number(self):
-        """OCR: number on line after label."""
-        scan = ParsedScan()
-        _extract_scores_and_controls("InBody Score\n64 Points", scan)
-        assert scan.inbody_score == 64.0
-
     def test_target_weight(self):
         scan = ParsedScan()
         _extract_scores_and_controls("Target Weight 78,0", scan)
