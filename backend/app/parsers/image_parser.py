@@ -150,13 +150,6 @@ def _extract_scores_and_controls(text: str, scan: ParsedScan):
         if m:
             scan.inbody_score = _safe_float(m.group(1))
     if not scan.inbody_score:
-        # "XX Points" without /100 (OCR may drop the denominator)
-        m = re.search(r'(?:Score|score)\D{0,10}(\d{2})\s*(?:Points|points|\b)', text)
-        if m:
-            v = _safe_float(m.group(1))
-            if v and 30 <= v <= 100:
-                scan.inbody_score = v
-    if not scan.inbody_score:
         # "InBody Score" label followed by number on same or next line
         m = re.search(r'InBody\s*Score\D*?(\d{2})\b', text, re.IGNORECASE)
         if m:

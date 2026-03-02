@@ -286,12 +286,6 @@ class TestExtractScoresAndControls:
         _extract_scores_and_controls("InBody Score 64", scan)
         assert scan.inbody_score == 64.0
 
-    def test_score_points_without_denominator(self):
-        """OCR drops '/100': 'Score 64 Points'."""
-        scan = ParsedScan()
-        _extract_scores_and_controls("Score 64 Points", scan)
-        assert scan.inbody_score == 64.0
-
     def test_score_label_newline_number(self):
         """OCR: number on line after label."""
         scan = ParsedScan()
